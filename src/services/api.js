@@ -1,6 +1,8 @@
 import axios from "axios";
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  "https://backend-livid-sigma-62.vercel.app/api";
 
 console.log("API URL:", API_URL);
 
