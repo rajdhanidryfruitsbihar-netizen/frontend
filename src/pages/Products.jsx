@@ -6,26 +6,11 @@ import Footer from "../components/Footer";
 import api from "../services/api";
 
 const categories = [
-  {
-    name: "All",
-    slug: "",
-  },
-  {
-    name: "Dates",
-    slug: "dates",
-  },
-  {
-    name: "Dry Fruits",
-    slug: "dry-fruits",
-  },
-  {
-    name: "Nuts",
-    slug: "nuts",
-  },
-  {
-    name: "Bakery Items",
-    slug: "bakery-items",
-  },
+  { name: "All", slug: "" },
+  { name: "Dates", slug: "dates" },
+  { name: "Dry Fruits", slug: "dry-fruits" },
+  { name: "Nuts", slug: "nuts" },
+  { name: "Bakery Items", slug: "bakery-items" },
 ];
 
 const Products = () => {
@@ -35,53 +20,111 @@ const Products = () => {
 
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const selectedCategory = searchParams.get("category") || "";
-  const searchQuery = searchParams.get("search") || "";
+  const selectedCategory =
+    searchParams.get("category") || "";
+
+  const searchQuery =
+    searchParams.get("search") || "";
 
   const [search, setSearch] = useState(searchQuery);
 
   useEffect(() => {
+    let mounted = true;
+
     const fetchProducts = async () => {
       try {
         setLoading(true);
         setError("");
 
-        let url = "/products?limit=100";
+        const params = {
+          limit: 100,
+        };
 
         if (selectedCategory) {
-          url += `&category=${encodeURIComponent(selectedCategory)}`;
+          params.category = selectedCategory;
         }
 
         if (searchQuery) {
-          url += `&search=${encodeURIComponent(searchQuery)}`;
+          params.search = searchQuery;
         }
 
-        const { data } = await api.get(url);
-
-        console.log("Products:", data.products);
-        console.log("Total:", data.pagination?.total);
-
-        setProducts(data.products || []);
-      } catch (error) {
-        console.error("Failed to fetch products:", error);
-
-        setError(
-          error.response?.data?.message ||
-            "Failed to load products."
+        console.log(
+          "Fetching products from:",
+          "https://backend-livid-sigma-62.vercel.app/api/products"
         );
+
+        const response = await api.get("/products", {
+          params,
+        });
+
+        console.log("Products API status:", response.status);
+        console.log("Products API response:", response.data);
+
+        if (!mounted) return;
+
+        if (response.data?.success) {
+          setProducts(
+            Array.isArray(response.data.products)
+              ? response.data.products
+              : []
+          );
+        } else {
+          setProducts([]);
+          setError("Unable to load products.");
+        }
+      } catch (err) {
+        console.error("PRODUCT API ERROR:", err);
+
+        console.error(
+          "Request URL:",
+          err.config?.baseURL + err.config?.url
+        );
+
+        console.error(
+          "Status:",
+          err.response?.status
+        );
+
+        console.error(
+          "Response:",
+          err.response?.data
+        );
+
+        if (!mounted) return;
+
+        if (err.response?.status === 404) {
+          setError(
+            "Products API route not found."
+          );
+        } else if (err.response?.status === 403) {
+          setError(
+            "Request blocked by the backend."
+          );
+        } else if (!err.response) {
+          setError(
+            "Unable to connect to the backend."
+          );
+        } else {
+          setError(
+            err.response?.data?.message ||
+              "Failed to load products."
+          );
+        }
 
         setProducts([]);
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchProducts();
-  }, [selectedCategory, searchQuery]);
 
-  // ================================
-  // CATEGORY FILTER
-  // ================================
+    return () => {
+      mounted = false;
+    };
+  }, [selectedCategory, searchQuery]);
 
   const handleCategoryChange = (slug) => {
     const params = {};
@@ -90,16 +133,12 @@ const Products = () => {
       params.category = slug;
     }
 
-    if (search) {
-      params.search = search;
+    if (search.trim()) {
+      params.search = search.trim();
     }
 
     setSearchParams(params);
   };
-
-  // ================================
-  // SEARCH
-  // ================================
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -117,18 +156,10 @@ const Products = () => {
     setSearchParams(params);
   };
 
-  // ================================
-  // CLEAR FILTERS
-  // ================================
-
   const clearFilters = () => {
     setSearch("");
     setSearchParams({});
   };
-
-  // ================================
-  // LOADING
-  // ================================
 
   if (loading) {
     return (
@@ -156,12 +187,9 @@ const Products = () => {
 
       <main className="max-w-7xl mx-auto px-6 py-16">
 
-        {/* ================================
-            HEADER
-        ================================= */}
+        {/* HEADER */}
 
         <div className="text-center">
-
           <p className="text-[#C89B3C] uppercase tracking-[0.25em] text-sm">
             Our Collection
           </p>
@@ -174,22 +202,20 @@ const Products = () => {
             Explore our premium collection of dates,
             dry fruits, nuts and bakery products.
           </p>
-
         </div>
 
-        {/* ================================
-            SEARCH
-        ================================= */}
+        {/* SEARCH */}
 
         <form
           onSubmit={handleSearch}
           className="max-w-xl mx-auto mt-10 flex gap-3"
         >
-
           <input
             type="text"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) =>
+              setSearch(e.target.value)
+            }
             placeholder="Search products..."
             className="flex-1 px-5 py-4 rounded-full border border-[#E5DCCF] bg-white outline-none focus:border-[#C89B3C]"
           />
@@ -200,15 +226,11 @@ const Products = () => {
           >
             Search
           </button>
-
         </form>
 
-        {/* ================================
-            CATEGORY FILTER
-        ================================= */}
+        {/* CATEGORIES */}
 
         <div className="flex flex-wrap justify-center gap-3 mt-10">
-
           {categories.map((category) => {
             const active =
               selectedCategory === category.slug;
@@ -217,7 +239,9 @@ const Products = () => {
               <button
                 key={category.slug || "all"}
                 onClick={() =>
-                  handleCategoryChange(category.slug)
+                  handleCategoryChange(
+                    category.slug
+                  )
                 }
                 className={`px-6 py-3 rounded-full border transition duration-300 ${
                   active
@@ -229,15 +253,11 @@ const Products = () => {
               </button>
             );
           })}
-
         </div>
 
-        {/* ================================
-            RESULT COUNT
-        ================================= */}
+        {/* RESULT COUNT */}
 
         <div className="flex items-center justify-between mt-12">
-
           <p className="text-gray-600">
             <span className="font-medium text-[#0F2B20]">
               {products.length}
@@ -253,28 +273,29 @@ const Products = () => {
               Clear Filters
             </button>
           )}
-
         </div>
 
-        {/* ================================
-            ERROR
-        ================================= */}
+        {/* ERROR */}
 
         {error && (
-          <div className="mt-10 text-center">
-            <p className="text-red-500">
+          <div className="mt-10 p-6 rounded-2xl bg-red-50 text-center">
+            <p className="text-red-600 font-medium">
               {error}
             </p>
+
+            <button
+              onClick={clearFilters}
+              className="mt-5 px-6 py-3 rounded-full bg-[#0F2B20] text-white"
+            >
+              Try Again
+            </button>
           </div>
         )}
 
-        {/* ================================
-            NO PRODUCTS
-        ================================= */}
+        {/* NO PRODUCTS */}
 
         {!error && products.length === 0 && (
           <div className="text-center py-24">
-
             <h2 className="text-2xl font-serif text-[#0F2B20]">
               No products found
             </h2>
@@ -289,44 +310,42 @@ const Products = () => {
             >
               View All Products
             </button>
-
           </div>
         )}
 
-        {/* ================================
-            PRODUCTS
-        ================================= */}
+        {/* PRODUCTS */}
 
         {products.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-7 mt-8">
-
             {products.map((product) => (
               <Link
                 key={product._id}
                 to={`/products/${product.slug}`}
                 className="group bg-white rounded-3xl overflow-hidden border border-[#EEE5D8] hover:-translate-y-2 hover:shadow-xl transition-all duration-300"
               >
-
                 {/* IMAGE */}
 
                 <div className="h-64 overflow-hidden bg-[#F5F1E8]">
-
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                    onError={(e) => {
-                      e.currentTarget.src =
-                        "/placeholder-product.jpg";
-                    }}
-                  />
-
+                  {product.image ? (
+                    <img
+                      src={product.image}
+                      alt={product.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                      onError={(e) => {
+                        e.currentTarget.src =
+                          "/placeholder-product.jpg";
+                      }}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-400">
+                      No image
+                    </div>
+                  )}
                 </div>
 
                 {/* INFO */}
 
                 <div className="p-5">
-
                   <h2 className="text-xl font-serif text-[#0F2B20] group-hover:text-[#C89B3C] transition">
                     {product.name}
                   </h2>
@@ -338,15 +357,11 @@ const Products = () => {
                   <div className="mt-5 text-[#C89B3C] font-medium">
                     View Product →
                   </div>
-
                 </div>
-
               </Link>
             ))}
-
           </div>
         )}
-
       </main>
 
       <Footer />
