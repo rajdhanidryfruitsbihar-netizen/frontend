@@ -19,7 +19,7 @@ const ProductDetails = () => {
         setLoading(true);
         setError("");
 
-        const { data } = await api.get(`api/products/${slug}`);
+        const { data } = await api.get(`/products/${slug}`);
 
         if (data.success) {
           setProduct(data.product);
