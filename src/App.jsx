@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { HashRouter, Routes, Route } from "react-router-dom";
 
 import Home from "./pages/Home";
 import Products from "./pages/Products";
@@ -22,7 +22,7 @@ function App() {
   }, []);
 
   return (
-    <BrowserRouter>
+    <HashRouter>
       {loading && <PageLoader />}
 
       <Routes>
@@ -43,7 +43,7 @@ function App() {
           element={<Contact />}
         />
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
 
